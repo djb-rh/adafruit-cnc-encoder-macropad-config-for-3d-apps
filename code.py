@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024 Liz Clark for Adafruit Industries
-# Adapted for multi-profile 3D/2D-view navigation (Bambu Studio, OpenSCAD, QCAD, ...)
+# Adapted for multi-profile 3D/2D-view navigation (Bambu Studio, OpenSCAD, QCAD, FreeCAD, ...)
 #
 # SPDX-License-Identifier: MIT
 #
@@ -39,7 +39,7 @@
 # menu bar app over a second USB serial channel (usb_cdc.data, enabled in
 # boot.py) so it doesn't interfere with the console/REPL port. Protocol is
 # newline-terminated ASCII:
-#   Mac -> device: "PROFILE bambu\n" / "PROFILE openscad\n" / "PROFILE qcad\n" / "QUERY\n"
+#   Mac -> device: "PROFILE bambu\n" / "PROFILE openscad\n" / "PROFILE qcad\n" / "PROFILE freecad\n" / "QUERY\n"
 #   device -> Mac: "OK <profile>\n" / "ERR <reason>\n" / "PROFILE <profile>\n"
 # Each profile also gets its own LED color, so the lit buttons alone tell
 # you which profile is active without needing to look at the Mac app.
@@ -61,6 +61,17 @@
 # claimed by Mission Control before QCAD ever sees it (a documented gotcha
 # on the QCAD forum), so this profile instead uses the manual's documented
 # fallback -- Cmd + left-drag -- which sidesteps that entirely.
+#
+# FreeCAD's default "CAD" navigation style (per FreeCAD's own docs) also
+# offers single-button-plus-modifier alternates to its default chorded
+# middle-button gestures: Ctrl + right-drag for pan, Shift + right-drag for
+# rotate. Those alternates are used here for the same reason as QCAD --
+# avoids relying on a plain middle-click, which macOS commonly intercepts.
+# Like Bambu, FreeCAD's CAD-style orbit camera has no independent roll, so
+# ROTATE+Y reuses yaw. NOTE: FreeCAD lets users pick a different navigation
+# style (Blender, Gesture, Maya-Gesture, ...) -- if these gestures don't
+# match, check Edit > Preferences > Display > Navigation and either switch
+# to CAD style or let me know which style is active so this can be adjusted.
 
 import time
 
@@ -92,6 +103,7 @@ OFF = (0, 0, 0)
 WHITE = (255, 255, 255)
 CYAN = (0, 255, 255)
 ORANGE = (255, 80, 0)
+GREEN = (0, 255, 0)
 
 kbd = Keyboard(usb_hid.devices)
 mouse = Mouse(usb_hid.devices)
@@ -200,6 +212,24 @@ def qcad_pan_down(distance=PAN_STEP):
     drag(Mouse.LEFT_BUTTON, 0, distance, modifier=Keycode.COMMAND)
 
 
+# FreeCAD (CAD navigation style): Ctrl + right-drag pans, avoiding a reliance
+# on the style's default plain middle-button drag (same macOS gotcha as QCAD)
+def freecad_pan_left(distance=PAN_STEP):
+    drag(Mouse.RIGHT_BUTTON, -distance, 0, modifier=Keycode.CONTROL)
+
+
+def freecad_pan_right(distance=PAN_STEP):
+    drag(Mouse.RIGHT_BUTTON, distance, 0, modifier=Keycode.CONTROL)
+
+
+def freecad_pan_up(distance=PAN_STEP):
+    drag(Mouse.RIGHT_BUTTON, 0, -distance, modifier=Keycode.CONTROL)
+
+
+def freecad_pan_down(distance=PAN_STEP):
+    drag(Mouse.RIGHT_BUTTON, 0, distance, modifier=Keycode.CONTROL)
+
+
 def accelerated_pan_step(dt):
     """Map seconds-since-last-tick to a drag distance: faster spin -> bigger step."""
     if dt <= PAN_ACCEL_FAST_DT:
@@ -242,6 +272,23 @@ def roll_right():  # OpenSCAD only: rotate around Y, other direction
     drag(Mouse.LEFT_BUTTON, ROTATE_STEP, 0, modifier=Keycode.SHIFT)
 
 
+# FreeCAD (CAD navigation style): Shift + right-drag rotates
+def freecad_pitch_neg():  # rotate around X, one direction
+    drag(Mouse.RIGHT_BUTTON, 0, -ROTATE_STEP, modifier=Keycode.SHIFT)
+
+
+def freecad_pitch_pos():  # rotate around X, other direction
+    drag(Mouse.RIGHT_BUTTON, 0, ROTATE_STEP, modifier=Keycode.SHIFT)
+
+
+def freecad_yaw_left():  # rotate around Z, one direction
+    drag(Mouse.RIGHT_BUTTON, -ROTATE_STEP, 0, modifier=Keycode.SHIFT)
+
+
+def freecad_yaw_right():  # rotate around Z, other direction
+    drag(Mouse.RIGHT_BUTTON, ROTATE_STEP, 0, modifier=Keycode.SHIFT)
+
+
 # Each profile supplies the same set of primitives; only *how* they're
 # achieved (which mouse button/modifier) differs per program.
 PROFILES = {
@@ -272,6 +319,15 @@ PROFILES = {
         "y_rot_neg": zoom_out, "y_rot_pos": zoom_in,
         "z_rot_neg": zoom_out, "z_rot_pos": zoom_in,
         "color": ORANGE,
+    },
+    "freecad": {
+        "pan_left": freecad_pan_left, "pan_right": freecad_pan_right,
+        "pan_up": freecad_pan_up, "pan_down": freecad_pan_down,
+        "zoom_in": zoom_in, "zoom_out": zoom_out,
+        "x_rot_neg": freecad_pitch_neg, "x_rot_pos": freecad_pitch_pos,
+        "y_rot_neg": freecad_yaw_left, "y_rot_pos": freecad_yaw_right,  # no roll; reuse yaw
+        "z_rot_neg": freecad_yaw_left, "z_rot_pos": freecad_yaw_right,
+        "color": GREEN,
     },
 }
 DEFAULT_PROFILE = "bambu"
