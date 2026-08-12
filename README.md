@@ -1,8 +1,8 @@
-# Adafruit CNC Encoder Macropad Config for Bambu Studio
+# Adafruit CNC Encoder Macropad Config for 3D Apps
 
 CircuitPython firmware that turns Adafruit's [CNC Rotary Macropad](https://learn.adafruit.com/cnc-rotary-macropad) into a dedicated 3D-view navigation controller — pan, rotate, and zoom without touching your mouse.
 
-It started as a Bambu Studio-only config (hence the repo name), but now supports multiple **profiles** — Bambu Studio and OpenSCAD's render/preview view so far — switchable on the fly from a companion Mac menu bar app, without reflashing the board.
+It started as a Bambu Studio-only config, but now supports multiple **profiles** — Bambu Studio and OpenSCAD's render/preview view so far — switchable on the fly from a companion Mac menu bar app, without reflashing the board.
 
 The macropad enumerates as a USB HID keyboard/mouse composite device and drives each program purely through simulated mouse gestures (and the occasional keyboard modifier), so it works regardless of what's selected in the scene and needs no configuration inside the target app itself.
 
