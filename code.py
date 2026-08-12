@@ -105,7 +105,7 @@ PAN_ACCEL_SLOW_DT = 0.25  # seconds/tick at or above this -> plain PAN_STEP
 
 OFF = (0, 0, 0)
 WHITE = (255, 255, 255)
-CYAN = (0, 255, 255)
+BLUE = (0, 0, 255)
 ORANGE = (255, 80, 0)
 GREEN = (0, 255, 0)
 
@@ -334,7 +334,7 @@ PROFILES = {
         "x_rot_neg": pitch_neg, "x_rot_pos": pitch_pos,
         "y_rot_neg": roll_left, "y_rot_pos": roll_right,  # real rotate-around-Y
         "z_rot_neg": yaw_left, "z_rot_pos": yaw_right,
-        "color": CYAN,
+        "color": BLUE,
     },
     "qcad": {
         "pan_left": qcad_pan_left, "pan_right": qcad_pan_right,
