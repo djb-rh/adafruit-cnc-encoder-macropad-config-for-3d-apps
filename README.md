@@ -49,7 +49,7 @@ Z has no real camera "move" of its own in either program, so MOVE + Z just zooms
 | Bambu Studio | `bambu` | white | Bambu's orbit camera can't roll, so this reuses the same left/right spin as ROTATE + Z |
 | OpenSCAD | `openscad` | cyan | A genuine rotate-around-Y, via Shift + horizontal left-drag (OpenSCAD's nightly build supports independent rotation around all three axes — see `code.py`'s header comment for how this was confirmed against OpenSCAD's own source) |
 
-The active profile is switched over a second USB serial port (`usb_cdc.data`, enabled by `boot.py`, separate from the console/REPL) using a small line-based protocol — see the header comment in `code.py` for the exact commands. In practice you won't hand-write these: the [profile switcher menu bar app](../cnc-macropad-profile-switcher) is a small companion Mac app that sends them for you from a dropdown. The board defaults to the `bambu` profile at boot if nothing has told it otherwise.
+The active profile is switched over a second USB serial port (`usb_cdc.data`, enabled by `boot.py`, separate from the console/REPL) using a small line-based protocol — see the header comment in `code.py` for the exact commands. In practice you won't hand-write these: the [profile switcher menu bar app](https://github.com/djb-rh/cnc-macropad-profile-switcher) is a small companion Mac app that sends them for you from a dropdown. The board defaults to the `bambu` profile at boot if nothing has told it otherwise.
 
 Adding a new profile means adding its gesture-primitive dict to `PROFILES` in `code.py` (see the existing two for the shape) and redeploying — this repo is still the source of truth for how each program's view actually gets driven, only *which* profile is active is controlled remotely.
 
