@@ -2,7 +2,7 @@
 
 CircuitPython firmware that turns Adafruit's [CNC Rotary Macropad](https://learn.adafruit.com/cnc-rotary-macropad) into a dedicated 3D-view navigation controller — pan, rotate, and zoom without touching your mouse.
 
-It started as a Bambu Studio-only config, but now supports multiple **profiles** — Bambu Studio and OpenSCAD's render/preview view so far — switchable on the fly from a companion Mac menu bar app, without reflashing the board.
+It started as a Bambu Studio-only config, but now supports multiple **profiles** — Bambu Studio, OpenSCAD's render/preview view, and QCAD's 2D drafting view so far — switchable on the fly from a companion Mac menu bar app, without reflashing the board.
 
 The macropad enumerates as a USB HID keyboard/mouse composite device and drives each program purely through simulated mouse gestures (and the occasional keyboard modifier), so it works regardless of what's selected in the scene and needs no configuration inside the target app itself.
 
@@ -40,14 +40,15 @@ Each axis's row also holds two "nudge" buttons that always act on that row's axi
 
 The rotary encoder does the same thing as the currently-selected axis's nudge pair. Panning (MOVE + X or MOVE + Y) is speed-sensitive: spin the encoder fast for big jumps, slowly for fine positioning.
 
-Z has no real camera "move" of its own in either program, so MOVE + Z just zooms in both profiles.
+Z has no real camera "move" of its own in any of these programs, so MOVE + Z just zooms in every profile.
 
 ## Profiles
 
-| Profile | Serial name | LED color | ROTATE + Y |
+| Profile | Serial name | LED color | ROTATE behavior |
 |---|---|---|---|
-| Bambu Studio | `bambu` | white | Bambu's orbit camera can't roll, so this reuses the same left/right spin as ROTATE + Z |
-| OpenSCAD | `openscad` | cyan | A genuine rotate-around-Y, via Shift + horizontal left-drag (OpenSCAD's nightly build supports independent rotation around all three axes — see `code.py`'s header comment for how this was confirmed against OpenSCAD's own source) |
+| Bambu Studio | `bambu` | white | ROTATE + Y reuses the same left/right spin as ROTATE + Z, since Bambu's orbit camera can't roll |
+| OpenSCAD | `openscad` | cyan | ROTATE + Y is a genuine rotate-around-Y, via Shift + horizontal left-drag (OpenSCAD's nightly build supports independent rotation around all three axes — see `code.py`'s header comment for how this was confirmed against OpenSCAD's own source) |
+| QCAD | `qcad` | orange | 2D CAD has no concept of rotate, so the whole ROTATE operation is just an alias for ZOOM on every axis. Panning uses Cmd + left-drag rather than QCAD's default middle-click drag, since macOS commonly claims the middle mouse button for Mission Control before QCAD ever sees the click (a documented QCAD-forum gotcha) |
 
 The active profile is switched over a second USB serial port (`usb_cdc.data`, enabled by `boot.py`, separate from the console/REPL) using a small line-based protocol — see the header comment in `code.py` for the exact commands. In practice you won't hand-write these: the [profile switcher menu bar app](https://github.com/djb-rh/cnc-macropad-profile-switcher) is a small companion Mac app that sends them for you from a dropdown. The board defaults to the `bambu` profile at boot if nothing has told it otherwise.
 
@@ -68,7 +69,7 @@ Adding a new profile means adding its gesture-primitive dict to `PROFILES` in `c
 
 3. **Copy `boot.py` and `code.py`** from this repo onto the root of the `CIRCUITPY` drive, replacing whatever is there. `code.py` auto-reloads immediately, but `boot.py` only takes effect after a hard reset — unplug/replug the board, or from the serial console: `import microcontroller; microcontroller.reset()`.
 
-4. **Plug the macropad into the computer running Bambu Studio or OpenSCAD.** No setup is needed inside either app — the device just acts as a mouse (and occasionally a keyboard, for OpenSCAD's Shift-modified rotate). Click into the 3D viewport once so it's focused, then try the buttons.
+4. **Plug the macropad into the computer running Bambu Studio, OpenSCAD, or QCAD.** No setup is needed inside any of them — the device just acts as a mouse (and occasionally a keyboard, for OpenSCAD's Shift-modified rotate and QCAD's Cmd-modified pan). Click into the 3D/drawing view once so it's focused, then try the buttons.
 
 ## Tuning
 
@@ -86,4 +87,4 @@ If any direction feels backwards, swap the corresponding function pair in a prof
 
 ## Credits
 
-Based on Adafruit's [CNC Rotary Macropad](https://learn.adafruit.com/cnc-rotary-macropad) CircuitPython example by Liz Clark for Adafruit Industries (MIT licensed), adapted here to drive Bambu Studio and OpenSCAD instead of a general CAD/slicer hotkey set.
+Based on Adafruit's [CNC Rotary Macropad](https://learn.adafruit.com/cnc-rotary-macropad) CircuitPython example by Liz Clark for Adafruit Industries (MIT licensed), adapted here to drive Bambu Studio, OpenSCAD, and QCAD instead of a general CAD/slicer hotkey set.

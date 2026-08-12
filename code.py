@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024 Liz Clark for Adafruit Industries
-# Adapted for multi-profile 3D-view navigation (Bambu Studio, OpenSCAD, ...)
+# Adapted for multi-profile 3D/2D-view navigation (Bambu Studio, OpenSCAD, QCAD, ...)
 #
 # SPDX-License-Identifier: MIT
 #
@@ -39,7 +39,7 @@
 # menu bar app over a second USB serial channel (usb_cdc.data, enabled in
 # boot.py) so it doesn't interfere with the console/REPL port. Protocol is
 # newline-terminated ASCII:
-#   Mac -> device: "PROFILE bambu\n" / "PROFILE openscad\n" / "QUERY\n"
+#   Mac -> device: "PROFILE bambu\n" / "PROFILE openscad\n" / "PROFILE qcad\n" / "QUERY\n"
 #   device -> Mac: "OK <profile>\n" / "ERR <reason>\n" / "PROFILE <profile>\n"
 # Each profile also gets its own LED color, so the lit buttons alone tell
 # you which profile is active without needing to look at the Mac app.
@@ -54,7 +54,13 @@
 # roll, so it reuses yaw (same as ROTATE+Z); OpenSCAD's nightly build can
 # genuinely rotate around Y via Shift + horizontal left-drag (verified
 # against openscad/openscad's QGLView.cc / MouseConfig.h on GitHub), so its
-# profile uses that instead.
+# profile uses that instead. QCAD is 2D (no rotate at all), so its ROTATE
+# operation is just an alias for ZOOM across all three axes -- per the
+# QCAD manual's Viewing/Navigating tutorial, panning is normally a held
+# middle-mouse-button drag, but on macOS the middle button is commonly
+# claimed by Mission Control before QCAD ever sees it (a documented gotcha
+# on the QCAD forum), so this profile instead uses the manual's documented
+# fallback -- Cmd + left-drag -- which sidesteps that entirely.
 
 import time
 
@@ -85,6 +91,7 @@ PAN_ACCEL_SLOW_DT = 0.25  # seconds/tick at or above this -> plain PAN_STEP
 OFF = (0, 0, 0)
 WHITE = (255, 255, 255)
 CYAN = (0, 255, 255)
+ORANGE = (255, 80, 0)
 
 kbd = Keyboard(usb_hid.devices)
 mouse = Mouse(usb_hid.devices)
@@ -176,6 +183,23 @@ def pan_down(distance=PAN_STEP):
     drag(Mouse.RIGHT_BUTTON, 0, distance)
 
 
+# QCAD: Cmd + left-drag pans (avoids the macOS Mission Control middle-click gotcha)
+def qcad_pan_left(distance=PAN_STEP):
+    drag(Mouse.LEFT_BUTTON, -distance, 0, modifier=Keycode.COMMAND)
+
+
+def qcad_pan_right(distance=PAN_STEP):
+    drag(Mouse.LEFT_BUTTON, distance, 0, modifier=Keycode.COMMAND)
+
+
+def qcad_pan_up(distance=PAN_STEP):
+    drag(Mouse.LEFT_BUTTON, 0, -distance, modifier=Keycode.COMMAND)
+
+
+def qcad_pan_down(distance=PAN_STEP):
+    drag(Mouse.LEFT_BUTTON, 0, distance, modifier=Keycode.COMMAND)
+
+
 def accelerated_pan_step(dt):
     """Map seconds-since-last-tick to a drag distance: faster spin -> bigger step."""
     if dt <= PAN_ACCEL_FAST_DT:
@@ -238,6 +262,16 @@ PROFILES = {
         "y_rot_neg": roll_left, "y_rot_pos": roll_right,  # real rotate-around-Y
         "z_rot_neg": yaw_left, "z_rot_pos": yaw_right,
         "color": CYAN,
+    },
+    "qcad": {
+        "pan_left": qcad_pan_left, "pan_right": qcad_pan_right,
+        "pan_up": qcad_pan_up, "pan_down": qcad_pan_down,
+        "zoom_in": zoom_in, "zoom_out": zoom_out,
+        # 2D CAD has no rotate; ROTATE just doubles up as ZOOM on every axis
+        "x_rot_neg": zoom_out, "x_rot_pos": zoom_in,
+        "y_rot_neg": zoom_out, "y_rot_pos": zoom_in,
+        "z_rot_neg": zoom_out, "z_rot_pos": zoom_in,
+        "color": ORANGE,
     },
 }
 DEFAULT_PROFILE = "bambu"
