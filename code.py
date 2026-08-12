@@ -62,16 +62,20 @@
 # on the QCAD forum), so this profile instead uses the manual's documented
 # fallback -- Cmd + left-drag -- which sidesteps that entirely.
 #
-# FreeCAD's default "CAD" navigation style (per FreeCAD's own docs) also
-# offers single-button-plus-modifier alternates to its default chorded
-# middle-button gestures: Ctrl + right-drag for pan, Shift + right-drag for
-# rotate. Those alternates are used here for the same reason as QCAD --
-# avoids relying on a plain middle-click, which macOS commonly intercepts.
-# Like Bambu, FreeCAD's CAD-style orbit camera has no independent roll, so
-# ROTATE+Y reuses yaw. NOTE: FreeCAD lets users pick a different navigation
-# style (Blender, Gesture, Maya-Gesture, ...) -- if these gestures don't
-# match, check Edit > Preferences > Display > Navigation and either switch
-# to CAD style or let me know which style is active so this can be adjusted.
+# FreeCAD's default "CAD" navigation style has no keyboard-modifier
+# alternates at all (checked via Preferences > Display > Navigation >
+# Mouse Configuration, which is the actual ground truth -- generic wiki
+# docs mentioning Ctrl/Shift + right-click alternates don't apply to this
+# build/config and were a dead end): panning is a plain held middle-button
+# drag, and rotating is middle+left or middle+right held as a two-button
+# chord (see chord_drag() below, used only by this profile) -- no keyboard
+# involved. Like Bambu, FreeCAD's CAD-style orbit camera has no independent
+# roll, so ROTATE+Y reuses yaw. NOTE: FreeCAD lets users pick a different
+# navigation style (Blender, Gesture, Maya-Gesture, ...) or customize the
+# CAD style's own bindings -- if these gestures don't match, check that
+# dialog. Also worth checking if pan/rotate seem to do nothing: macOS can
+# intercept a plain middle-click for Mission Control (the same failure mode
+# documented on the QCAD forum for QCAD) -- check System Settings if so.
 
 import time
 
@@ -179,6 +183,28 @@ def drag(button, dx, dy, modifier=None, steps=6, step_delay=0.008):
         kbd.release(modifier)
 
 
+def chord_drag(button_a, button_b, dx, dy, steps=6, step_delay=0.008):
+    """Press `button_a`, then also press `button_b` while `button_a` stays
+    held (a two-button chord), move (dx, dy) in several small steps, then
+    release both -- for gestures like FreeCAD's "hold middle, then also
+    hold left/right" rotate.
+    """
+    mouse.press(button_a)
+    time.sleep(0.02)
+    mouse.press(button_b)
+    time.sleep(0.02)
+    remaining_x, remaining_y = dx, dy
+    for i in range(steps, 0, -1):
+        step_x = remaining_x // i
+        step_y = remaining_y // i
+        mouse.move(x=step_x, y=step_y)
+        remaining_x -= step_x
+        remaining_y -= step_y
+        time.sleep(step_delay)
+    time.sleep(0.02)
+    mouse.release(button_a | button_b)
+
+
 def pan_left(distance=PAN_STEP):
     drag(Mouse.RIGHT_BUTTON, -distance, 0)
 
@@ -215,19 +241,19 @@ def qcad_pan_down(distance=PAN_STEP):
 # FreeCAD (CAD navigation style): Ctrl + right-drag pans, avoiding a reliance
 # on the style's default plain middle-button drag (same macOS gotcha as QCAD)
 def freecad_pan_left(distance=PAN_STEP):
-    drag(Mouse.RIGHT_BUTTON, -distance, 0, modifier=Keycode.CONTROL)
+    drag(Mouse.MIDDLE_BUTTON, -distance, 0)
 
 
 def freecad_pan_right(distance=PAN_STEP):
-    drag(Mouse.RIGHT_BUTTON, distance, 0, modifier=Keycode.CONTROL)
+    drag(Mouse.MIDDLE_BUTTON, distance, 0)
 
 
 def freecad_pan_up(distance=PAN_STEP):
-    drag(Mouse.RIGHT_BUTTON, 0, -distance, modifier=Keycode.CONTROL)
+    drag(Mouse.MIDDLE_BUTTON, 0, -distance)
 
 
 def freecad_pan_down(distance=PAN_STEP):
-    drag(Mouse.RIGHT_BUTTON, 0, distance, modifier=Keycode.CONTROL)
+    drag(Mouse.MIDDLE_BUTTON, 0, distance)
 
 
 def accelerated_pan_step(dt):
@@ -274,19 +300,19 @@ def roll_right():  # OpenSCAD only: rotate around Y, other direction
 
 # FreeCAD (CAD navigation style): Shift + right-drag rotates
 def freecad_pitch_neg():  # rotate around X, one direction
-    drag(Mouse.RIGHT_BUTTON, 0, -ROTATE_STEP, modifier=Keycode.SHIFT)
+    chord_drag(Mouse.MIDDLE_BUTTON, Mouse.LEFT_BUTTON, 0, -ROTATE_STEP)
 
 
 def freecad_pitch_pos():  # rotate around X, other direction
-    drag(Mouse.RIGHT_BUTTON, 0, ROTATE_STEP, modifier=Keycode.SHIFT)
+    chord_drag(Mouse.MIDDLE_BUTTON, Mouse.LEFT_BUTTON, 0, ROTATE_STEP)
 
 
 def freecad_yaw_left():  # rotate around Z, one direction
-    drag(Mouse.RIGHT_BUTTON, -ROTATE_STEP, 0, modifier=Keycode.SHIFT)
+    chord_drag(Mouse.MIDDLE_BUTTON, Mouse.LEFT_BUTTON, -ROTATE_STEP, 0)
 
 
 def freecad_yaw_right():  # rotate around Z, other direction
-    drag(Mouse.RIGHT_BUTTON, ROTATE_STEP, 0, modifier=Keycode.SHIFT)
+    chord_drag(Mouse.MIDDLE_BUTTON, Mouse.LEFT_BUTTON, ROTATE_STEP, 0)
 
 
 # Each profile supplies the same set of primitives; only *how* they're
